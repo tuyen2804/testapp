@@ -1,6 +1,5 @@
 package com.example.testbackend
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
@@ -13,6 +12,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.testbackend.model.AuthResponse
+import com.example.testbackend.model.User
 import com.example.testbackend.network.RetrofitInstance
 import retrofit2.Call
 import retrofit2.Callback
@@ -20,7 +20,6 @@ import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
 
-    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -28,7 +27,8 @@ class MainActivity : AppCompatActivity() {
         val usernameEditText = findViewById<EditText>(R.id.username)
         val passwordEditText = findViewById<EditText>(R.id.password)
         val loginButton = findViewById<Button>(R.id.loginButton)
-        val logtex = findViewById<TextView>(R.id.log)
+        val logText = findViewById<TextView>(R.id.log)
+
         loginButton.setOnClickListener {
             if (isNetworkAvailable()) {
                 val username = usernameEditText.text.toString()
@@ -40,23 +40,32 @@ class MainActivity : AppCompatActivity() {
                         if (response.isSuccessful) {
                             val authResponse = response.body()
                             if (authResponse?.auth == true) {
+                                // Lưu token vào SharedPreferences
+                                val sharedPreferences = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                                with(sharedPreferences.edit()) {
+                                    putString("auth_token", authResponse.token)
+                                    apply()
+                                }
+
                                 val intent = Intent(this@MainActivity, HomeActivity::class.java)
                                 intent.putExtra("username", username)
                                 startActivity(intent)
                             } else {
-                                logtex.text = "Sai thông tin"
+                                logText.text = "Sai thông tin"
                                 Log.d("LoginActivity", "Auth failed: ${authResponse?.auth}")
                             }
                         } else {
-                            logtex.text = "Lỗi: ${response.message()}"
+                            logText.text = "Lỗi: ${response.message()}"
                             Log.d("LoginActivity", "Response error: ${response.message()}")
                         }
                     }
 
-
                     override fun onFailure(call: Call<AuthResponse>, t: Throwable) {
-                        Toast.makeText(this@MainActivity, "Network error", Toast.LENGTH_SHORT).show()
+                        logText.text = "Network error: ${t.message}"
+                        Log.d("LoginActivity", "Network error", t)
+                        Toast.makeText(this@MainActivity, "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
                     }
+
                 })
             } else {
                 Toast.makeText(this, "No network connection", Toast.LENGTH_SHORT).show()

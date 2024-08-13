@@ -1,5 +1,8 @@
 package com.example.testbackend.model
 
-import com.example.testbackend.User
+data class AuthResponse(
+    val auth: Boolean,
+    val token: String?,
+    val user: User?
+)
 
-data class AuthResponse(val auth: Boolean, val user: User?)
